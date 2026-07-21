@@ -304,8 +304,6 @@ yarn-error.log
 # that was being hit by the .gitignore rule .*
 !.prettierrc
 
-devplans
-
 # Playwright
 playwright-report/
 test-results/

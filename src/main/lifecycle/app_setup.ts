@@ -1,8 +1,12 @@
 import { app } from "electron";
 import type { BrowserWindow } from "electron";
-import { restoreWindowAndFocus } from "../../infrastructure";
-import { isWindows } from "../../common";
+import {
+	defaultBrowserWindow,
+	restoreWindowAndFocus,
+} from "../../infrastructure";
+import { isWindows, IPC_CHANNELS } from "../../common";
 import { fileOpen } from "../file_open";
+import { parseCleanExifFilePaths } from "../clean_exif_launch_args";
 
 function preventMultipleAppInstances(): void {
 	if (!app.requestSingleInstanceLock()) {
@@ -19,9 +23,22 @@ function openMinimizedIfAlreadyExists({
 }: OpenMinimizedParams): void {
 	app.on("second-instance", (_event, argv) => {
 		console.log(argv);
-		if (isWindows() && argv.length > 0 && argv.includes("--open-file")) {
-			fileOpen({ browserWindow });
-			return;
+
+		if (isWindows()) {
+			const cleanExifPaths = parseCleanExifFilePaths(argv);
+			if (cleanExifPaths.length > 0) {
+				defaultBrowserWindow({ browserWindow }).webContents.send(
+					IPC_CHANNELS.FILE_OPEN_ADD_FILES,
+					cleanExifPaths,
+				);
+				restoreWindowAndFocus({ browserWindow });
+				return;
+			}
+
+			if (argv.length > 0 && argv.includes("--open-file")) {
+				fileOpen({ browserWindow });
+				return;
+			}
 		}
 
 		restoreWindowAndFocus({ browserWindow });
